@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'search_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -13,6 +14,9 @@ class ProductsScreen extends ConsumerWidget {
 
     final productState =
         ref.watch(productProvider);
+
+    final searchQuery =
+    ref.watch(productSearchProvider);
 
     return Column(
       crossAxisAlignment:
@@ -50,6 +54,40 @@ class ProductsScreen extends ConsumerWidget {
 
         const SizedBox(height: 30),
 
+        SizedBox(
+  width: 350,
+
+  child: TextField(
+
+    decoration: InputDecoration(
+      hintText: 'Search products...',
+      prefixIcon:
+          const Icon(Icons.search),
+
+      filled: true,
+      fillColor: Colors.white,
+
+      border: OutlineInputBorder(
+        borderRadius:
+            BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+    ),
+
+    onChanged: (value) {
+
+      ref
+          .read(
+            productSearchProvider
+                .notifier,
+          )
+          .state = value;
+    },
+  ),
+),
+
+const SizedBox(height: 20),
+
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(20),
@@ -75,8 +113,20 @@ class ProductsScreen extends ConsumerWidget {
                   ),
 
               data: (products) {
+                final filteredProducts =
+    products.where((product) {
 
-                if (products.isEmpty) {
+  final query =
+      searchQuery.toLowerCase();
+
+  return product.name
+          .toLowerCase()
+          .contains(query) ||
+      product.barcode
+          .toLowerCase()
+          .contains(query);
+}).toList();
+if (filteredProducts.isEmpty) {
 
                   return const Center(
                     child: Text(
@@ -85,56 +135,167 @@ class ProductsScreen extends ConsumerWidget {
                   );
                 }
 
-                return ListView.builder(
+                return SingleChildScrollView(
 
-                  itemCount: products.length,
+  scrollDirection: Axis.vertical,
 
-                  itemBuilder: (context, index) {
+  child: DataTable(
 
-                    final product =
-                        products[index];
+    columnSpacing: 40,
 
-                    return ListTile(
+    headingRowColor:
+        WidgetStateProperty.all(
+      Colors.grey.shade200,
+    ),
 
-                      title: Text(
-                        product.name,
-                      ),
+    columns: const [
 
-                      subtitle: Text(
-                        'Barcode: ${product.barcode}',
-                      ),
+      DataColumn(
+        label: Text(
+          'Product',
+          style: TextStyle(
+            fontWeight:
+                FontWeight.bold,
+          ),
+        ),
+      ),
 
-                      trailing: Row(
-                        mainAxisSize:
-                            MainAxisSize.min,
-                        children: [
+      DataColumn(
+        label: Text(
+          'Barcode',
+          style: TextStyle(
+            fontWeight:
+                FontWeight.bold,
+          ),
+        ),
+      ),
 
-                          Text(
-                            '₹ ${product.price}',
-                          ),
+      DataColumn(
+        label: Text(
+          'Category',
+          style: TextStyle(
+            fontWeight:
+                FontWeight.bold,
+          ),
+        ),
+      ),
 
-                          IconButton(
-                            onPressed: () {
+      DataColumn(
+        label: Text(
+          'Price',
+          style: TextStyle(
+            fontWeight:
+                FontWeight.bold,
+          ),
+        ),
+      ),
 
-                              ref
-                                  .read(
-                                    productProvider
-                                        .notifier,
-                                  )
-                                  .deleteProduct(
-                                    product.id,
-                                  );
-                            },
-                            icon: const Icon(
-                              Icons.delete,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
+      DataColumn(
+        label: Text(
+          'Stock',
+          style: TextStyle(
+            fontWeight:
+                FontWeight.bold,
+          ),
+        ),
+      ),
+
+      DataColumn(
+        label: Text(
+          'Actions',
+          style: TextStyle(
+            fontWeight:
+                FontWeight.bold,
+          ),
+        ),
+      ),
+    ],
+
+    rows: filteredProducts.map((product) {
+
+      return DataRow(
+        cells: [
+
+          DataCell(
+            Text(product.name),
+          ),
+
+          DataCell(
+            Text(product.barcode),
+          ),
+
+          DataCell(
+            Text(product.category),
+          ),
+
+          DataCell(
+            Text(
+              '₹ ${product.price}',
+            ),
+          ),
+
+          DataCell(
+
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6,
+              ),
+
+              decoration: BoxDecoration(
+
+                color: product.stock <= 5
+                    ? Colors.red.shade100
+                    : Colors.green.shade100,
+
+                borderRadius:
+                    BorderRadius.circular(20),
+              ),
+
+              child: Text(
+                '${product.stock}',
+
+                style: TextStyle(
+
+                  color: product.stock <= 5
+                      ? Colors.red
+                      : Colors.green,
+
+                  fontWeight:
+                      FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+
+          DataCell(
+
+            IconButton(
+
+              onPressed: () {
+
+                ref
+                    .read(
+                      productProvider
+                          .notifier,
+                    )
+                    .deleteProduct(
+                      product.id,
                     );
-                  },
-                );
+              },
+
+              icon: const Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
+            ),
+          ),
+        ],
+      );
+    }).toList(),
+  ),
+);
               },
             ),
           ),
