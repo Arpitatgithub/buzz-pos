@@ -271,26 +271,99 @@ if (filteredProducts.isEmpty) {
 
           DataCell(
 
-            IconButton(
+  Row(
+    children: [
 
-              onPressed: () {
+      IconButton(
 
-                ref
-                    .read(
-                      productProvider
-                          .notifier,
-                    )
-                    .deleteProduct(
-                      product.id,
-                    );
-              },
+        onPressed: () {
 
-              icon: const Icon(
-                Icons.delete,
-                color: Colors.red,
-              ),
+          showDialog(
+            context: context,
+            builder: (_) =>
+                EditProductDialog(
+              product: product,
             ),
-          ),
+          );
+        },
+
+        icon: const Icon(
+          Icons.edit,
+          color: Colors.blue,
+        ),
+      ),
+
+      IconButton(
+
+        onPressed: () async {
+
+          final shouldDelete =
+              await showDialog<bool>(
+
+            context: context,
+
+            builder: (_) {
+
+              return AlertDialog(
+
+                title: const Text(
+                  'Delete Product',
+                ),
+
+                content: const Text(
+                  'Are you sure you want to delete this product?',
+                ),
+
+                actions: [
+
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(
+                        context,
+                        false,
+                      );
+                    },
+                    child: const Text(
+                      'Cancel',
+                    ),
+                  ),
+
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(
+                        context,
+                        true,
+                      );
+                    },
+                    child: const Text(
+                      'Delete',
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+
+          if (shouldDelete == true) {
+
+            await ref
+                .read(
+                  productProvider.notifier,
+                )
+                .deleteProduct(
+                  product.id,
+                );
+          }
+        },
+
+        icon: const Icon(
+          Icons.delete,
+          color: Colors.red,
+        ),
+      ),
+    ],
+  ),
+),
         ],
       );
     }).toList(),
@@ -469,6 +542,202 @@ class _AddProductDialogState
     'Save',
   ),
 ),
+      ],
+    );
+  }
+}
+
+class EditProductDialog
+    extends ConsumerStatefulWidget {
+
+  final ProductModel product;
+
+  const EditProductDialog({
+    super.key,
+    required this.product,
+  });
+
+  @override
+  ConsumerState<EditProductDialog>
+      createState() =>
+          _EditProductDialogState();
+}
+
+class _EditProductDialogState
+    extends ConsumerState<EditProductDialog> {
+
+  late TextEditingController
+      nameController;
+
+  late TextEditingController
+      barcodeController;
+
+  late TextEditingController
+      priceController;
+
+  late TextEditingController
+      stockController;
+
+  late TextEditingController
+      categoryController;
+
+  @override
+  void initState() {
+
+    super.initState();
+
+    nameController =
+        TextEditingController(
+      text: widget.product.name,
+    );
+
+    barcodeController =
+        TextEditingController(
+      text: widget.product.barcode,
+    );
+
+    priceController =
+        TextEditingController(
+      text:
+          widget.product.price.toString(),
+    );
+
+    stockController =
+        TextEditingController(
+      text:
+          widget.product.stock.toString(),
+    );
+
+    categoryController =
+        TextEditingController(
+      text: widget.product.category,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    return AlertDialog(
+
+      title: const Text(
+        'Edit Product',
+      ),
+
+      content: SizedBox(
+
+        width: 400,
+
+        child: Column(
+          mainAxisSize:
+              MainAxisSize.min,
+          children: [
+
+            TextField(
+              controller: nameController,
+              decoration:
+                  const InputDecoration(
+                labelText: 'Name',
+              ),
+            ),
+
+            TextField(
+              controller:
+                  barcodeController,
+              decoration:
+                  const InputDecoration(
+                labelText: 'Barcode',
+              ),
+            ),
+
+            TextField(
+              controller:
+                  priceController,
+              decoration:
+                  const InputDecoration(
+                labelText: 'Price',
+              ),
+            ),
+
+            TextField(
+              controller:
+                  stockController,
+              decoration:
+                  const InputDecoration(
+                labelText: 'Stock',
+              ),
+            ),
+
+            TextField(
+              controller:
+                  categoryController,
+              decoration:
+                  const InputDecoration(
+                labelText: 'Category',
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      actions: [
+
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text(
+            'Cancel',
+          ),
+        ),
+
+        ElevatedButton(
+
+          onPressed: () async {
+
+            final updatedProduct =
+                ProductModel(
+
+              id: widget.product.id,
+
+              name:
+                  nameController.text,
+
+              barcode:
+                  barcodeController.text,
+
+              price:
+                  double.tryParse(
+                        priceController.text,
+                      ) ??
+                      0,
+
+              stock:
+                  int.tryParse(
+                        stockController.text,
+                      ) ??
+                      0,
+
+              category:
+                  categoryController.text,
+            );
+
+            await ref
+                .read(
+                  productProvider.notifier,
+                )
+                .updateProduct(
+                  updatedProduct,
+                );
+
+            if (context.mounted) {
+              Navigator.pop(context);
+            }
+          },
+
+          child: const Text(
+            'Update',
+          ),
+        ),
       ],
     );
   }

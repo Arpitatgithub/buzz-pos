@@ -18,6 +18,7 @@ class ProductNotifier
 
   ProductNotifier()
       : super(const AsyncLoading()) {
+
     loadProducts();
   }
 
@@ -50,6 +51,15 @@ class ProductNotifier
   ) async {
 
     await service.deleteProduct(id);
+
+    await loadProducts();
+  }
+
+  Future<void> updateProduct(
+    ProductModel product,
+  ) async {
+
+    await service.updateProduct(product);
 
     await loadProducts();
   }

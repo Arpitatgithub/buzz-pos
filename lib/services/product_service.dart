@@ -2,6 +2,15 @@ import '../core/supabase_client.dart';
 import '../models/product_model.dart';
 
 class ProductService {
+  Future<void> updateProduct(
+  ProductModel product,
+) async {
+
+  await supabase
+      .from('products')
+      .update(product.toMap())
+      .eq('id', product.id);
+}
 
   Future<List<ProductModel>>
       fetchProducts() async {
