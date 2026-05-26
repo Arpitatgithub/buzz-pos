@@ -21,6 +21,21 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState
     extends State<DashboardScreen> {
 
+  @override
+void initState() {
+
+  super.initState();
+
+  final user =
+      Supabase.instance.client
+          .auth.currentUser;
+
+  if (user?.email ==
+      'cashier@buzz.com') {
+
+    selectedIndex = 3;
+  }
+}
   int selectedIndex = 0;
 
   final screens = [
@@ -29,6 +44,8 @@ class _DashboardScreenState
     const CustomersScreen(),
     const BillingScreen(),
     const SalesScreen(),
+
+    
   ];
 
   @override
@@ -147,7 +164,7 @@ class DashboardHome
       ),
 
       label: const Text(
-        'Logout',
+        'Dashboard',
       ),
     ),
   ],

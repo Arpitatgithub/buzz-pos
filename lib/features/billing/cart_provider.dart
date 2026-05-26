@@ -1,7 +1,7 @@
+import '../../models/product_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/cart_item_model.dart';
-import '../../models/product_model.dart';
 
 final cartProvider = StateNotifierProvider<
     CartNotifier,
@@ -120,7 +120,18 @@ class CartNotifier
           sum + item.total,
     );
   }
+void removeFromCart(
+  ProductModel product,
+) {
 
+  state = state.where(
+
+    (item) =>
+        item.product.id !=
+        product.id,
+
+  ).toList();
+}
   void clearCart() {
     state = [];
   }

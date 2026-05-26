@@ -1,3 +1,4 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -41,63 +42,122 @@ class AppSidebar extends ConsumerWidget {
 
         children: [
 
-          const SizedBox(height: 40),
+  const SizedBox(height: 40),
 
-          const Text(
+  const Text(
 
-            'Buzz POS',
+    'Buzz POS',
 
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight:
-                  FontWeight.bold,
+    style: TextStyle(
+      color: Colors.white,
+      fontSize: 26,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+
+  const SizedBox(height: 40),
+
+  // DASHBOARD
+  if (role == 'admin')
+
+    sidebarItem(
+      Icons.dashboard,
+      'Dashboard',
+      0,
+    ),
+
+  // PRODUCTS
+  if (role == 'admin')
+
+    sidebarItem(
+      Icons.shopping_bag,
+      'Products',
+      1,
+    ),
+
+  // CUSTOMERS
+  sidebarItem(
+    Icons.people,
+    'Customers',
+    2,
+  ),
+
+  // BILLING
+  sidebarItem(
+    Icons.point_of_sale,
+    'Billing',
+    3,
+  ),
+
+  // SALES
+  if (role == 'admin')
+
+    sidebarItem(
+      Icons.receipt_long,
+      'Sales',
+      4,
+    ),
+
+  // PUSHES LOGOUT TO BOTTOM
+  const Spacer(),
+
+  // LOGOUT BUTTON
+  Padding(
+
+    padding: const EdgeInsets.all(16),
+
+    child: GestureDetector(
+
+      onTap: () async {
+
+        await Supabase
+            .instance
+            .client
+            .auth
+            .signOut();
+      },
+
+      child: Container(
+
+        padding: const EdgeInsets.all(14),
+
+        decoration: BoxDecoration(
+
+          borderRadius:
+              BorderRadius.circular(12),
+
+          color: Colors.red
+              .withOpacity(0.15),
+        ),
+
+        child: const Row(
+
+          children: [
+
+            Icon(
+              Icons.logout,
+              color: Colors.red,
             ),
-          ),
 
-          const SizedBox(height: 40),
+            SizedBox(width: 14),
 
-          // DASHBOARD
-          if (role == 'admin')
+            Text(
 
-            sidebarItem(
-              Icons.dashboard,
-              'Dashboard',
-              0,
+              'Logout',
+
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+                fontWeight:
+                    FontWeight.bold,
+              ),
             ),
-
-          // PRODUCTS
-          if (role == 'admin')
-
-            sidebarItem(
-              Icons.shopping_bag,
-              'Products',
-              1,
-            ),
-
-          // CUSTOMERS
-          sidebarItem(
-            Icons.people,
-            'Customers',
-            2,
-          ),
-
-          // BILLING
-          sidebarItem(
-            Icons.point_of_sale,
-            'Billing',
-            3,
-          ),
-
-          // SALES
-          if (role == 'admin')
-
-            sidebarItem(
-              Icons.receipt_long,
-              'Sales',
-              4,
-            ),
-        ],
+          ],
+        ),
+      ),
+    ),
+  ),
+],
       ),
     );
   }
