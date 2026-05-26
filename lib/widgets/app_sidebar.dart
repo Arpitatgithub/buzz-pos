@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AppSidebar extends StatelessWidget {
+import '../features/auth/role_provider.dart';
+
+class AppSidebar extends ConsumerWidget {
+  
+
   final int selectedIndex;
-  final Function(int) onItemSelected;
+
+  final Function(int)
+      onItemSelected;
 
   const AppSidebar({
     super.key,
@@ -11,30 +18,85 @@ class AppSidebar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+
+    final roleState =
+        ref.watch(roleProvider);
+
+    final role =
+        roleState.value ?? 'cashier';
+        print('CURRENT ROLE: $role');
+
     return Container(
+
       width: 250,
-      color: const Color(0xFF1E293B),
+
+      color:
+          const Color(0xFF1E293B),
+
       child: Column(
+
         children: [
+
           const SizedBox(height: 40),
 
           const Text(
+
             'Buzz POS',
+
             style: TextStyle(
               color: Colors.white,
               fontSize: 26,
-              fontWeight: FontWeight.bold,
+              fontWeight:
+                  FontWeight.bold,
             ),
           ),
 
           const SizedBox(height: 40),
 
-          sidebarItem(Icons.dashboard, 'Dashboard', 0),
-          sidebarItem(Icons.shopping_bag, 'Products', 1),
-          sidebarItem(Icons.people, 'Customers', 2),
-          sidebarItem(Icons.point_of_sale, 'Billing', 3),
-          sidebarItem(Icons.receipt_long, 'Sales', 4),
+          // DASHBOARD
+          if (role == 'admin')
+
+            sidebarItem(
+              Icons.dashboard,
+              'Dashboard',
+              0,
+            ),
+
+          // PRODUCTS
+          if (role == 'admin')
+
+            sidebarItem(
+              Icons.shopping_bag,
+              'Products',
+              1,
+            ),
+
+          // CUSTOMERS
+          sidebarItem(
+            Icons.people,
+            'Customers',
+            2,
+          ),
+
+          // BILLING
+          sidebarItem(
+            Icons.point_of_sale,
+            'Billing',
+            3,
+          ),
+
+          // SALES
+          if (role == 'admin')
+
+            sidebarItem(
+              Icons.receipt_long,
+              'Sales',
+              4,
+            ),
         ],
       ),
     );
@@ -45,25 +107,46 @@ class AppSidebar extends StatelessWidget {
     String title,
     int index,
   ) {
-    final isSelected = selectedIndex == index;
+
+    final isSelected =
+        selectedIndex == index;
 
     return GestureDetector(
-      onTap: () => onItemSelected(index),
+
+      onTap: () =>
+          onItemSelected(index),
+
       child: Padding(
-        padding: const EdgeInsets.symmetric(
+
+        padding:
+            const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 8,
         ),
+
         child: Container(
-          padding: const EdgeInsets.all(14),
+
+          padding:
+              const EdgeInsets.all(14),
+
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+
+            borderRadius:
+                BorderRadius.circular(
+              12,
+            ),
+
             color: isSelected
                 ? Colors.blue
-                : Colors.white.withOpacity(0.05),
+                : Colors.white.withOpacity(
+                    0.05,
+                  ),
           ),
+
           child: Row(
+
             children: [
+
               Icon(
                 icon,
                 color: Colors.white,
@@ -72,8 +155,11 @@ class AppSidebar extends StatelessWidget {
               const SizedBox(width: 14),
 
               Text(
+
                 title,
-                style: const TextStyle(
+
+                style:
+                    const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                 ),
@@ -84,4 +170,5 @@ class AppSidebar extends StatelessWidget {
       ),
     );
   }
+  
 }

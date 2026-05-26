@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/app.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'features/auth/login_screen.dart';
 Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,8 +16,44 @@ Future<void> main() async {
   );
 
   runApp(
-    const ProviderScope(
-      child: BuzzApp(),
-    ),
-  );
+  const ProviderScope(
+    child: RootApp(),
+  ),
+);
+}
+class RootApp extends StatelessWidget {
+
+  const RootApp({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+
+    return StreamBuilder(
+
+      stream: Supabase.instance.client.auth
+          .onAuthStateChange,
+
+      builder: (context, snapshot) {
+
+        final session =
+            Supabase.instance.client.auth
+                .currentSession;
+
+        if (session != null) {
+
+          return const BuzzApp();
+        }
+
+        return const MaterialApp(
+
+          debugShowCheckedModeBanner:
+              false,
+
+          home: LoginScreen(),
+        );
+      },
+    );
+  }
 }

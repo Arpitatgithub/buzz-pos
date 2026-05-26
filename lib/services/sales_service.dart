@@ -11,4 +11,20 @@ class SalesService {
         .from('sales')
         .insert(sale.toMap());
   }
+
+  Future<List<Map<String, dynamic>>>
+      fetchSales() async {
+
+    final response =
+        await supabase
+            .from('sales')
+            .select()
+            .order(
+              'created_at',
+              ascending: false,
+            );
+
+    return List<Map<String, dynamic>>
+        .from(response);
+  }
 }
