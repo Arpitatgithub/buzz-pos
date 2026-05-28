@@ -1,3 +1,4 @@
+import '../../services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'search_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -217,8 +218,48 @@ if (filteredProducts.isEmpty) {
         cells: [
 
           DataCell(
-            Text(product.name),
-          ),
+
+  Row(
+
+    children: [
+
+      ClipRRect(
+
+        borderRadius:
+            BorderRadius.circular(10),
+
+        child: product.imageUrl.isEmpty
+
+            ? Container(
+
+                width: 50,
+                height: 50,
+
+                color:
+                    Colors.grey.shade200,
+
+                child: const Icon(
+                  Icons.image,
+                ),
+              )
+
+            : Image.network(
+
+                product.imageUrl,
+
+                width: 50,
+                height: 50,
+
+                fit: BoxFit.cover,
+              ),
+      ),
+
+      const SizedBox(width: 14),
+
+      Text(product.name),
+    ],
+  ),
+),
 
           DataCell(
             Text(product.barcode),
@@ -387,6 +428,7 @@ class AddProductDialog
   ConsumerState<AddProductDialog>
       createState() =>
           _AddProductDialogState();
+         
 }
 
 class _AddProductDialogState
@@ -406,6 +448,10 @@ class _AddProductDialogState
 
   final categoryController =
       TextEditingController();
+      String imageUrl = '';
+
+final storageService =
+    StorageService();
 
   @override
   Widget build(BuildContext context) {
@@ -420,53 +466,128 @@ class _AddProductDialogState
         width: 400,
 
         child: Column(
-          mainAxisSize:
-              MainAxisSize.min,
-          children: [
 
-            TextField(
-              controller: nameController,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Name',
-              ),
-            ),
+  mainAxisSize:
+      MainAxisSize.min,
 
-            TextField(
-              controller:
-                  barcodeController,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Barcode',
-              ),
-            ),
+  children: [
 
-            TextField(
-              controller: priceController,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Price',
-              ),
-            ),
+    TextField(
+      controller: nameController,
+      decoration:
+          const InputDecoration(
+        labelText: 'Name',
+      ),
+    ),
 
-            TextField(
-              controller: stockController,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Stock',
-              ),
-            ),
+    TextField(
+      controller:
+          barcodeController,
+      decoration:
+          const InputDecoration(
+        labelText: 'Barcode',
+      ),
+    ),
 
-            TextField(
-              controller:
-                  categoryController,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Category',
-              ),
-            ),
-          ],
+    TextField(
+      controller: priceController,
+      decoration:
+          const InputDecoration(
+        labelText: 'Price',
+      ),
+    ),
+
+    TextField(
+      controller: stockController,
+      decoration:
+          const InputDecoration(
+        labelText: 'Stock',
+      ),
+    ),
+
+    TextField(
+      controller:
+          categoryController,
+      decoration:
+          const InputDecoration(
+        labelText: 'Category',
+      ),
+    ),
+
+    const SizedBox(height: 20),
+
+    GestureDetector(
+
+      onTap: () async {
+
+        final uploadedImage =
+            await storageService
+                .uploadProductImage();
+
+        if (uploadedImage.isNotEmpty) {
+
+          setState(() {
+
+            imageUrl =
+                uploadedImage;
+          });
+        }
+      },
+
+      child: Container(
+
+        height: 160,
+        width: double.infinity,
+
+        decoration: BoxDecoration(
+
+          color: Colors.grey.shade100,
+
+          borderRadius:
+              BorderRadius.circular(16),
+
+          border: Border.all(
+            color: Colors.grey.shade300,
+          ),
         ),
+
+        child: imageUrl.isEmpty
+
+            ? Column(
+
+                mainAxisAlignment:
+                    MainAxisAlignment.center,
+
+                children: const [
+
+                  Icon(
+                    Icons.cloud_upload,
+                    size: 50,
+                    color: Colors.grey,
+                  ),
+
+                  SizedBox(height: 10),
+
+                  Text(
+                    'Upload Product Image',
+                  ),
+                ],
+              )
+
+            : ClipRRect(
+
+                borderRadius:
+                    BorderRadius.circular(16),
+
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                ),
+              ),
+      ),
+    ),
+  ],
+),
       ),
 
       actions: [
@@ -486,24 +607,27 @@ class _AddProductDialogState
     try {
 
       final product = ProductModel(
-        id: const Uuid().v4(),
 
-        name: nameController.text,
+  id: const Uuid().v4(),
 
-        barcode: barcodeController.text,
+  name: nameController.text,
 
-        price: double.tryParse(
-              priceController.text,
-            ) ??
-            0,
+  barcode: barcodeController.text,
 
-        stock: int.tryParse(
-              stockController.text,
-            ) ??
-            0,
+  price: double.tryParse(
+        priceController.text,
+      ) ??
+      0,
 
-        category: categoryController.text,
-      );
+  stock: int.tryParse(
+        stockController.text,
+      ) ??
+      0,
+
+  category: categoryController.text,
+
+  imageUrl: imageUrl,
+);
 
       await ref
           .read(productProvider.notifier)
@@ -566,6 +690,8 @@ class EditProductDialog
 class _EditProductDialogState
     extends ConsumerState<EditProductDialog> {
 
+      
+
   late TextEditingController
       nameController;
 
@@ -581,38 +707,46 @@ class _EditProductDialogState
   late TextEditingController
       categoryController;
 
+   late String imageUrl;
+
+  final storageService =
+      StorageService();    
+
   @override
-  void initState() {
+void initState() {
 
-    super.initState();
+  super.initState();
 
-    nameController =
-        TextEditingController(
-      text: widget.product.name,
-    );
+  nameController =
+      TextEditingController(
+    text: widget.product.name,
+  );
 
-    barcodeController =
-        TextEditingController(
-      text: widget.product.barcode,
-    );
+  barcodeController =
+      TextEditingController(
+    text: widget.product.barcode,
+  );
 
-    priceController =
-        TextEditingController(
-      text:
-          widget.product.price.toString(),
-    );
+  priceController =
+      TextEditingController(
+    text:
+        widget.product.price.toString(),
+  );
 
-    stockController =
-        TextEditingController(
-      text:
-          widget.product.stock.toString(),
-    );
+  stockController =
+      TextEditingController(
+    text:
+        widget.product.stock.toString(),
+  );
 
-    categoryController =
-        TextEditingController(
-      text: widget.product.category,
-    );
-  }
+  categoryController =
+      TextEditingController(
+    text: widget.product.category,
+  );
+
+  imageUrl =
+      widget.product.imageUrl;
+}
 
   @override
   Widget build(BuildContext context) {
@@ -675,6 +809,78 @@ class _EditProductDialogState
                 labelText: 'Category',
               ),
             ),
+            const SizedBox(height: 20),
+
+GestureDetector(
+
+  onTap: () async {
+
+    final uploadedImage =
+        await storageService
+            .uploadProductImage();
+
+    if (uploadedImage.isNotEmpty) {
+
+      setState(() {
+
+        imageUrl =
+            uploadedImage;
+      });
+    }
+  },
+
+  child: Container(
+
+    height: 160,
+    width: double.infinity,
+
+    decoration: BoxDecoration(
+
+      color: Colors.grey.shade100,
+
+      borderRadius:
+          BorderRadius.circular(16),
+
+      border: Border.all(
+        color: Colors.grey.shade300,
+      ),
+    ),
+
+    child: imageUrl.isEmpty
+
+        ? Column(
+
+            mainAxisAlignment:
+                MainAxisAlignment.center,
+
+            children: const [
+
+              Icon(
+                Icons.cloud_upload,
+                size: 50,
+                color: Colors.grey,
+              ),
+
+              SizedBox(height: 10),
+
+              Text(
+                'Upload Product Image',
+              ),
+            ],
+          )
+
+        : ClipRRect(
+
+            borderRadius:
+                BorderRadius.circular(16),
+
+            child: Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+            ),
+          ),
+  ),
+),
           ],
         ),
       ),
@@ -692,52 +898,54 @@ class _EditProductDialogState
 
         ElevatedButton(
 
-          onPressed: () async {
+  onPressed: () async {
 
-            final updatedProduct =
-                ProductModel(
+    final updatedProduct =
+        ProductModel(
 
-              id: widget.product.id,
+      id: widget.product.id,
 
-              name:
-                  nameController.text,
+      name:
+          nameController.text,
 
-              barcode:
-                  barcodeController.text,
+      barcode:
+          barcodeController.text,
 
-              price:
-                  double.tryParse(
-                        priceController.text,
-                      ) ??
-                      0,
+      price:
+          double.tryParse(
+                priceController.text,
+              ) ??
+              0,
 
-              stock:
-                  int.tryParse(
-                        stockController.text,
-                      ) ??
-                      0,
+      stock:
+          int.tryParse(
+                stockController.text,
+              ) ??
+              0,
 
-              category:
-                  categoryController.text,
-            );
+      category:
+          categoryController.text,
 
-            await ref
-                .read(
-                  productProvider.notifier,
-                )
-                .updateProduct(
-                  updatedProduct,
-                );
+      imageUrl: imageUrl,
+    );
 
-            if (context.mounted) {
-              Navigator.pop(context);
-            }
-          },
+    await ref
+        .read(
+          productProvider.notifier,
+        )
+        .updateProduct(
+          updatedProduct,
+        );
 
-          child: const Text(
-            'Update',
-          ),
-        ),
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
+  },
+
+  child: const Text(
+    'Update',
+  ),
+),
       ],
     );
   }

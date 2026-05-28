@@ -5,6 +5,7 @@ class ProductModel {
   final double price;
   final int stock;
   final String category;
+  final String imageUrl;
 
   ProductModel({
     required this.id,
@@ -13,6 +14,7 @@ class ProductModel {
     required this.price,
     required this.stock,
     required this.category,
+    required this.imageUrl,
   });
 
   factory ProductModel.fromMap(Map<String, dynamic> map) {
@@ -23,6 +25,7 @@ class ProductModel {
       price: map['price'].toDouble(),
       stock: map['stock'],
       category: map['category'],
+      imageUrl: map['image_url'] ?? '',
     );
   }
 
@@ -34,6 +37,7 @@ class ProductModel {
       'price': price,
       'stock': stock,
       'category': category,
+      'image_url': imageUrl,
     };
   }
 }
