@@ -33,123 +33,159 @@ class AppSidebar extends ConsumerWidget {
 
     return Container(
 
-      width: 250,
+  width: 250,
 
-      color:
-          const Color(0xFF1E293B),
+  color: const Color(0xFF1E293B),
 
-      child: Column(
+  child: SingleChildScrollView(
 
-        children: [
+    child: ConstrainedBox(
 
-  const SizedBox(height: 40),
+      constraints: BoxConstraints(
 
-  const Text(
+        minHeight:
+            MediaQuery.of(context)
+                .size
+                .height,
+      ),
 
-    'Buzz POS',
+      child: IntrinsicHeight(
 
-    style: TextStyle(
-      color: Colors.white,
-      fontSize: 26,
-      fontWeight: FontWeight.bold,
-    ),
-  ),
-
-  const SizedBox(height: 40),
-
-  // DASHBOARD
-  if (role == 'admin')
-
-    sidebarItem(
-      Icons.dashboard,
-      'Dashboard',
-      0,
-    ),
-
-  // PRODUCTS
-  if (role == 'admin')
-
-    sidebarItem(
-      Icons.shopping_bag,
-      'Products',
-      1,
-    ),
-
-  // CUSTOMERS
-  sidebarItem(
-    Icons.people,
-    'Customers',
-    2,
-  ),
-
-  // BILLING
-  sidebarItem(
-    Icons.point_of_sale,
-    'Billing',
-    3,
-  ),
-
-  // SALES
-  if (role == 'admin')
-
-    sidebarItem(
-      Icons.receipt_long,
-      'Sales',
-      4,
-    ),
-
-  // PUSHES LOGOUT TO BOTTOM
-  const Spacer(),
-
-  // LOGOUT BUTTON
-  Padding(
-
-    padding: const EdgeInsets.all(16),
-
-    child: GestureDetector(
-
-      onTap: () async {
-
-        await Supabase
-            .instance
-            .client
-            .auth
-            .signOut();
-      },
-
-      child: Container(
-
-        padding: const EdgeInsets.all(14),
-
-        decoration: BoxDecoration(
-
-          borderRadius:
-              BorderRadius.circular(12),
-
-          color: Colors.red
-              .withOpacity(0.15),
-        ),
-
-        child: const Row(
+        child: Column(
 
           children: [
 
-            Icon(
-              Icons.logout,
-              color: Colors.red,
-            ),
+            const SizedBox(height: 40),
 
-            SizedBox(width: 14),
+            const Text(
 
-            Text(
-
-              'Logout',
+              'Buzz POS',
 
               style: TextStyle(
-                color: Colors.red,
-                fontSize: 16,
+                color: Colors.white,
+                fontSize: 26,
                 fontWeight:
                     FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 40),
+
+            // DASHBOARD
+            if (role == 'admin')
+
+              sidebarItem(
+                Icons.dashboard,
+                'Dashboard',
+                0,
+              ),
+
+            // PRODUCTS
+            if (role == 'admin')
+
+              sidebarItem(
+                Icons.shopping_bag,
+                'Products',
+                1,
+              ),
+
+            // CUSTOMERS
+            sidebarItem(
+              Icons.people,
+              'Customers',
+              2,
+            ),
+
+            // BILLING
+            sidebarItem(
+              Icons.point_of_sale,
+              'Billing',
+              3,
+            ),
+
+            // SALES
+            if (role == 'admin')
+
+              sidebarItem(
+                Icons.receipt_long,
+                'Sales',
+                4,
+              ),
+
+              if (role == 'admin')
+
+  sidebarItem(
+    Icons.manage_accounts,
+    'Users',
+    5,
+  ),
+
+            const Spacer(),
+
+            Padding(
+
+              padding:
+                  const EdgeInsets.all(
+                16,
+              ),
+
+              child: GestureDetector(
+
+                onTap: () async {
+
+                  await Supabase
+                      .instance
+                      .client
+                      .auth
+                      .signOut();
+                },
+
+                child: Container(
+
+                  padding:
+                      const EdgeInsets.all(
+                    14,
+                  ),
+
+                  decoration:
+                      BoxDecoration(
+
+                    borderRadius:
+                        BorderRadius.circular(
+                      12,
+                    ),
+
+                    color: Colors.red
+                        .withOpacity(
+                      0.15,
+                    ),
+                  ),
+
+                  child: const Row(
+
+                    children: [
+
+                      Icon(
+                        Icons.logout,
+                        color: Colors.red,
+                      ),
+
+                      SizedBox(width: 14),
+
+                      Text(
+
+                        'Logout',
+
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight:
+                              FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -157,9 +193,7 @@ class AppSidebar extends ConsumerWidget {
       ),
     ),
   ),
-],
-      ),
-    );
+);
   }
 
   Widget sidebarItem(

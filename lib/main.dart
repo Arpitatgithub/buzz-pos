@@ -1,3 +1,4 @@
+import 'features/auth/auth_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -41,18 +42,13 @@ class RootApp extends StatelessWidget {
             Supabase.instance.client.auth
                 .currentSession;
 
-        if (session != null) {
-
-          return const BuzzApp();
-        }
-
         return const MaterialApp(
 
-          debugShowCheckedModeBanner:
-              false,
+  debugShowCheckedModeBanner:
+      false,
 
-          home: LoginScreen(),
-        );
+  home: AuthGate(),
+);
       },
     );
   }

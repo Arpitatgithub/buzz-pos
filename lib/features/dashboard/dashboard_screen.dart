@@ -1,3 +1,5 @@
+import '../users/users_screen.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -39,14 +41,13 @@ void initState() {
   int selectedIndex = 0;
 
   final screens = [
-    const DashboardHome(),
-    const ProductsScreen(),
-    const CustomersScreen(),
-    const BillingScreen(),
-    const SalesScreen(),
-
-    
-  ];
+  const DashboardHome(),
+  const ProductsScreen(),
+  const CustomersScreen(),
+  const BillingScreen(),
+  const SalesScreen(),
+  const UsersScreen(),
+];
 
   @override
   Widget build(BuildContext context) {
@@ -109,73 +110,96 @@ class DashboardHome
 
       data: (data) {
 
-        return Column(
+        return SingleChildScrollView(
 
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          child: Column(
 
-          children: [
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
 
-            const Text(
+            children: [
 
-              'Dashboard',
+              const Text(
 
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight:
-                    FontWeight.bold,
+                'Dashboard',
+
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight:
+                      FontWeight.bold,
+                ),
               ),
-            ),
 
-            const SizedBox(height: 30),
+              const SizedBox(height: 30),
 
-            // ANALYTICS CARDS
-            Row(
+              Wrap(
 
-  mainAxisAlignment:
-      MainAxisAlignment.spaceBetween,
+                spacing: 20,
+                runSpacing: 20,
 
-  children: [
+                children: [
 
-    const Text(
+                  dashboardCard(
+                    'Revenue',
+                    '₹ ${data['totalRevenue']}',
+                    Icons.currency_rupee,
+                  ),
 
-      'Dashboard',
+                  dashboardCard(
+                    'Sales',
+                    '${data['totalSales']}',
+                    Icons.receipt_long,
+                  ),
 
-      style: TextStyle(
-        fontSize: 32,
-        fontWeight:
-            FontWeight.bold,
-      ),
-    ),
+                  dashboardCard(
+                    'Products',
+                    '${data['totalProducts']}',
+                    Icons.inventory_2,
+                  ),
 
-    ElevatedButton.icon(
+                  dashboardCard(
+                    'Customers',
+                    '${data['totalCustomers'] ?? 0}',
+                    Icons.people,
+                  ),
+                ],
+              ),
 
-      onPressed: () async {
+              const SizedBox(height: 20),
 
-        await Supabase
-            .instance
-            .client
-            .auth
-            .signOut();
-      },
+              Align(
 
-      icon: const Icon(
-        Icons.logout,
-      ),
+                alignment:
+                    Alignment.centerLeft,
 
-      label: const Text(
-        'Dashboard',
-      ),
-    ),
-  ],
-),
+                child: ElevatedButton.icon(
 
-            const SizedBox(height: 40),
+                  onPressed: () async {
 
-            // RECENT SALES
-            Expanded(
+                    await Supabase
+                        .instance
+                        .client
+                        .auth
+                        .signOut();
+                  },
 
-              child: Container(
+                  icon: const Icon(
+                    Icons.logout,
+                  ),
+
+                  label: const Text(
+                    'Logout',
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              salesChart(),
+
+              const SizedBox(height: 30),
+
+              Container(
 
                 padding:
                     const EdgeInsets.all(
@@ -183,6 +207,7 @@ class DashboardHome
                 ),
 
                 decoration: BoxDecoration(
+
                   color: Colors.white,
 
                   borderRadius:
@@ -214,111 +239,213 @@ class DashboardHome
                       height: 20,
                     ),
 
-                    Expanded(
+                    ListView.builder(
 
-                      child: ListView.builder(
+                      shrinkWrap: true,
 
-                        itemCount:
-                            data[
-                                    'recentSales']
-                                .length,
+                      physics:
+                          const NeverScrollableScrollPhysics(),
 
-                        itemBuilder:
-                            (context, index) {
+                      itemCount:
+                          data['recentSales']
+                              .length,
 
-                          final sale =
-                              data[
-                                      'recentSales']
-                                  [index];
+                      itemBuilder:
+                          (context, index) {
 
-                          return Container(
+                        final sale =
+                            data['recentSales']
+                                [index];
 
-                            margin:
-                                const EdgeInsets.only(
-                              bottom: 16,
+                        return Container(
+
+                          margin:
+                              const EdgeInsets.only(
+                            bottom: 16,
+                          ),
+
+                          padding:
+                              const EdgeInsets.all(
+                            16,
+                          ),
+
+                          decoration:
+                              BoxDecoration(
+
+                            color:
+                                Colors.grey
+                                    .shade100,
+
+                            borderRadius:
+                                BorderRadius.circular(
+                              14,
                             ),
+                          ),
 
-                            padding:
-                                const EdgeInsets.all(
-                              16,
-                            ),
+                          child: Row(
 
-                            decoration:
-                                BoxDecoration(
-                              color:
-                                  Colors.grey
-                                      .shade100,
+                            mainAxisAlignment:
+                                MainAxisAlignment
+                                    .spaceBetween,
 
-                              borderRadius:
-                                  BorderRadius.circular(
-                                14,
-                              ),
-                            ),
+                            children: [
 
-                            child: Row(
+                              Column(
 
-                              mainAxisAlignment:
-                                  MainAxisAlignment
-                                      .spaceBetween,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment
+                                        .start,
 
-                              children: [
+                                children: [
 
-                                Column(
+                                  Text(
 
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment
-                                          .start,
+                                    sale[
+                                        'payment_method'],
 
-                                  children: [
+                                    style:
+                                        const TextStyle(
+                                      fontSize:
+                                          18,
 
-                                    Text(
-                                      sale[
-                                          'payment_method'],
-
-                                      style:
-                                          const TextStyle(
-                                        fontSize:
-                                            18,
-                                        fontWeight:
-                                            FontWeight
-                                                .bold,
-                                      ),
+                                      fontWeight:
+                                          FontWeight
+                                              .bold,
                                     ),
-
-                                    Text(
-                                      sale[
-                                          'created_at'],
-                                    ),
-                                  ],
-                                ),
-
-                                Text(
-
-                                  '₹ ${sale['total']}',
-
-                                  style:
-                                      const TextStyle(
-                                    fontSize: 22,
-                                    color:
-                                        Colors.blue,
-                                    fontWeight:
-                                        FontWeight
-                                            .bold,
                                   ),
+
+                                  Text(
+                                    sale[
+                                        'created_at'],
+                                  ),
+                                ],
+                              ),
+
+                              Text(
+
+                                '₹ ${sale['total']}',
+
+                                style:
+                                    const TextStyle(
+
+                                  fontSize: 22,
+
+                                  color:
+                                      Colors.blue,
+
+                                  fontWeight:
+                                      FontWeight
+                                          .bold,
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
+    );
+  }
+
+  Widget salesChart() {
+
+    return Container(
+
+      height: 320,
+
+      padding:
+          const EdgeInsets.all(
+        24,
+      ),
+
+      decoration: BoxDecoration(
+
+        color: Colors.white,
+
+        borderRadius:
+            BorderRadius.circular(
+          24,
+        ),
+      ),
+
+      child: Column(
+
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+
+        children: [
+
+          const Text(
+
+            'Sales Analytics',
+
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight:
+                  FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          Expanded(
+
+            child: LineChart(
+
+              LineChartData(
+
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  horizontalInterval: 1,
+                ),
+
+                borderData:
+                    FlBorderData(
+                  show: false,
+                ),
+
+                titlesData:
+                    const FlTitlesData(
+                  show: false,
+                ),
+
+                lineBarsData: [
+
+                  LineChartBarData(
+
+                    spots: const [
+
+                      FlSpot(0, 1),
+                      FlSpot(1, 3),
+                      FlSpot(2, 2),
+                      FlSpot(3, 5),
+                      FlSpot(4, 3.5),
+                      FlSpot(5, 6),
+                      FlSpot(6, 4),
+                    ],
+
+                    isCurved: true,
+
+                    barWidth: 5,
+
+                    dotData:
+                        const FlDotData(
+                      show: false,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -328,25 +455,50 @@ class DashboardHome
     IconData icon,
   ) {
 
-    return Expanded(
+    return SizedBox(
+
+      width: 280,
 
       child: Container(
 
-        height: 140,
+        height: 160,
 
         padding:
             const EdgeInsets.all(
-          20,
+          24,
         ),
 
         decoration: BoxDecoration(
 
-          color: Colors.white,
+          gradient: LinearGradient(
+
+            colors: [
+
+              Colors.blue.shade500,
+              Colors.blue.shade700,
+            ],
+          ),
 
           borderRadius:
               BorderRadius.circular(
-            18,
+            24,
           ),
+
+          boxShadow: [
+
+            BoxShadow(
+
+              color:
+                  Colors.blue.withOpacity(
+                0.2,
+              ),
+
+              blurRadius: 20,
+
+              offset:
+                  const Offset(0, 10),
+            ),
+          ],
         ),
 
         child: Column(
@@ -365,27 +517,67 @@ class DashboardHome
               children: [
 
                 Text(
+
                   title,
 
-                  style: const TextStyle(
+                  style:
+                      const TextStyle(
+
                     fontSize: 16,
-                    color: Colors.grey,
+
+                    color:
+                        Colors.white70,
+
+                    fontWeight:
+                        FontWeight.w500,
                   ),
                 ),
 
-                Icon(icon),
+                Container(
+
+                  padding:
+                      const EdgeInsets.all(
+                    12,
+                  ),
+
+                  decoration: BoxDecoration(
+
+                    color: Colors.white
+                        .withOpacity(
+                      0.15,
+                    ),
+
+                    borderRadius:
+                        BorderRadius.circular(
+                      16,
+                    ),
+                  ),
+
+                  child: Icon(
+
+                    icon,
+
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
               ],
             ),
 
             const Spacer(),
 
             Text(
+
               value,
 
               style: const TextStyle(
-                fontSize: 30,
+
+                fontSize: 34,
+
                 fontWeight:
                     FontWeight.bold,
+
+                color: Colors.white,
               ),
             ),
           ],

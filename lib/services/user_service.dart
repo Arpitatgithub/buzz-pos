@@ -15,4 +15,19 @@ class UserService {
 
     return response['role'];
   }
+
+  Future<bool> isUserActive(
+    String email,
+  ) async {
+
+    final response =
+        await supabase
+            .from('users')
+            .select('is_active')
+            .eq('email', email)
+            .single();
+
+    return response['is_active']
+        ?? true;
+  }
 }

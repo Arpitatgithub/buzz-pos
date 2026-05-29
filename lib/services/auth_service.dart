@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'user_service.dart';
+
 class AuthService {
 
   final supabase =
@@ -9,12 +11,29 @@ class AuthService {
 
     required String email,
     required String password,
+
   }) async {
 
+    final response =
     await supabase.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+  email: email,
+  password: password,
+);
+
+final isActive =
+    await UserService()
+        .isUserActive(email);
+
+if (!isActive) {
+
+  await supabase.auth.signOut();
+
+  throw Exception(
+    'Your account has been disabled. Contact administrator.',
+  );
+}
+
+return;
   }
 
   Future<void> signOut() async {
