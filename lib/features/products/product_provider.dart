@@ -63,4 +63,16 @@ class ProductNotifier
 
     await loadProducts();
   }
+  Future<void> decreaseStock({
+  required String productId,
+  required int quantity,
+}) async {
+
+  await service.decreaseStock(
+    productId: productId,
+    quantity: quantity,
+  );
+
+  await loadProducts();
+}
 }

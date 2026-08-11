@@ -46,4 +46,16 @@ class ProductService {
         .delete()
         .eq('id', id);
   }
+  Future<void> decreaseStock({
+  required String productId,
+  required int quantity,
+}) async {
+  await supabase.rpc(
+    'decrease_product_stock',
+    params: {
+      'p_product_id': productId,
+      'p_quantity': quantity,
+    },
+  );
+}
 }

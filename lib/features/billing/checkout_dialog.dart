@@ -1,8 +1,10 @@
+import '../dashboard/dashboard_provider.dart';
+import '../products/product_provider.dart';
 import '../../models/cart_item_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-
+import '../sales/sales_provider.dart';
 import '../../models/sale_model.dart';
 import '../../services/sales_service.dart';
 import 'cart_provider.dart';
@@ -200,73 +202,79 @@ class _CheckoutDialogState
 
         ElevatedButton(
 
-          onPressed: () async {
+          
+onPressed: () async {
+  try {
+    final sale = SaleModel(
+      id: const Uuid().v4(),
+      subtotal: widget.subtotal,
+      gst: gst,
+      discount: discount,
+      total: total,
+      paymentMethod: paymentMethod,
+      createdAt: DateTime.now(),
+    );
 
-            final sale = SaleModel(
+    // 1. Complete sale + update stock atomically
+    await SalesService().completeSale(
+      sale: sale,
+      items: widget.items,
+    );
 
-              id: const Uuid().v4(),
+    // 2. Generate invoice
+    final pdfData =
+        await InvoiceService().generateInvoice(
+      items: widget.items,
+      subtotal: widget.subtotal,
+      gst: gst,
+      discount: discount,
+      total: total,
+      paymentMethod: paymentMethod,
+    );
 
-              subtotal:
-                  widget.subtotal,
+    // 3. Print invoice
+    await Printing.layoutPdf(
+      onLayout: (_) async => pdfData,
+    );
 
-              gst: gst,
+    // 4. Refresh Sales screen
+    ref.invalidate(salesProvider);
 
-              discount: discount,
+    // 5. Refresh Dashboard
+    ref.invalidate(dashboardProvider);
 
-              total: total,
+    // 6. Refresh Products / Stock
+    await ref
+        .read(productProvider.notifier)
+        .loadProducts();
 
-              paymentMethod:
-                  paymentMethod,
+    // 7. Clear cart
+    ref
+        .read(cartProvider.notifier)
+        .clearCart();
 
-              createdAt:
-                  DateTime.now(),
-            );
+    // 8. Close checkout
+    if (context.mounted) {
+      Navigator.pop(context);
 
-            await SalesService()
-                .createSale(sale);
-                final pdfData =
-    await InvoiceService()
-        .generateInvoice(
-
-  items: widget.items,
-
-  subtotal: widget.subtotal,
-
-  gst: gst,
-
-  discount: discount,
-
-  total: total,
-
-  paymentMethod:
-      paymentMethod,
-);
-
-await Printing.layoutPdf(
-  onLayout: (_) async => pdfData,
-);
-
-            ref
-                .read(
-                  cartProvider.notifier,
-                )
-                .clearCart();
-
-            if (context.mounted) {
-
-              Navigator.pop(context);
-
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(
-
-                const SnackBar(
-                  content: Text(
-                    'Sale Completed',
-                  ),
-                ),
-              );
-            }
-          },
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sale Completed'),
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Sale failed: $e',
+          ),
+        ),
+      );
+    }
+  }
+},
 
           child: const Text(
             'Complete Sale',

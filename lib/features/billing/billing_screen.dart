@@ -239,18 +239,43 @@ class _BillingScreenState
 
   }).toList();
 
-                      return GridView.builder(
+                      return LayoutBuilder(
 
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
+  builder: (context, constraints) {
 
-                          crossAxisCount: 3,
+    final width =
+        constraints.maxWidth;
 
-                          crossAxisSpacing: 20,
-                          mainAxisSpacing: 20,
+    final crossAxisCount =
+        width > 1400
+            ? 4
+            : width > 1100
+                ? 3
+                : width > 700
+                    ? 2
+                    : 1;
 
-                          childAspectRatio: 1.1,
-                        ),
+    return GridView.builder(
+
+      gridDelegate:
+          SliverGridDelegateWithFixedCrossAxisCount(
+
+        crossAxisCount:
+            crossAxisCount,
+
+        crossAxisSpacing: 20,
+
+        mainAxisSpacing: 20,
+
+        childAspectRatio:
+    width > 1400
+        ? 1.2
+        : width > 1100
+            ? 1.05
+            : width > 700
+                ? 0.9
+                : 0.75,
+      ),
 
                         itemCount:
                             filteredProducts.length,
@@ -316,11 +341,13 @@ class _BillingScreenState
 
                               child: Column(
 
-                                crossAxisAlignment:
-                                    CrossAxisAlignment
-                                        .start,
+  mainAxisAlignment:
+      MainAxisAlignment.spaceBetween,
 
-                                children: [
+  crossAxisAlignment:
+      CrossAxisAlignment.start,
+
+  children: [
 
                                   Row(
 
@@ -398,20 +425,27 @@ class _BillingScreenState
                                     ],
                                   ),
 
-                                  const Spacer(),
+                                  
 
-                                  Text(
+                                  FittedBox(
 
-                                    '₹ ${product.price.toStringAsFixed(2)}',
+  alignment:
+      Alignment.centerLeft,
 
-                                    style:
-                                        const TextStyle(
-                                      fontSize: 28,
+  child: Text(
+
+    '₹ ${product.price.toStringAsFixed(2)}',
+
+    style:
+        const TextStyle(
+      fontSize: 28,
                                       color: Colors.blue,
                                       fontWeight:
                                           FontWeight.bold,
                                     ),
                                   ),
+                                  ),
+
 
                                   const SizedBox(
                                     height: 14,
@@ -438,9 +472,11 @@ class _BillingScreenState
                                         Icons.add,
                                       ),
 
-                                      label: const Text(
-                                        'Add to Cart',
-                                      ),
+                                      label: const FittedBox(
+  child: Text(
+    'Add to Cart',
+  ),
+),
                                     ),
                                   ),
                                 ],
@@ -448,20 +484,29 @@ class _BillingScreenState
                             ),
                           );
                         },
-                      );
-                    },
-                  ),
-                ),
+                                              );
+                      },
+                    );
+                                    },
+                  ), // productState.when
+                ), // Expanded
               ],
             ),
           ),
+                  
+                
 
-          const SizedBox(width: 20),
-
+const SizedBox(width:20),
           // RIGHT SIDE CART
           Container(
 
-            width: 430,
+  width:
+      MediaQuery.of(context)
+                  .size
+                  .width >
+              1200
+          ? 430
+          : 340,
 
             padding:
                 const EdgeInsets.all(24),
@@ -483,16 +528,36 @@ class _BillingScreenState
 
               children: [
 
-                const Text(
+                Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    const Text(
+      'Current Bill',
+      style: TextStyle(
+        fontSize: 30,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
 
-                  'Current Bill',
-
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
-                ),
+    if (cart.isNotEmpty)
+      TextButton.icon(
+        onPressed: () {
+          cartNotifier.clearCart();
+        },
+        icon: const Icon(
+          Icons.delete_outline,
+          color: Colors.red,
+        ),
+        label: const Text(
+          'Clear Cart',
+          style: TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+  ],
+),
 
                 const SizedBox(height: 25),
 
