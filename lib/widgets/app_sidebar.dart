@@ -97,6 +97,13 @@ class AppSidebar extends ConsumerWidget {
       'Sales',
       4,
     ),
+    // USER MANAGEMENT
+if (role == 'admin')
+  sidebarItem(
+    Icons.manage_accounts,
+    'User Management',
+    5,
+  ),
 
   // PUSHES LOGOUT TO BOTTOM
   const Spacer(),

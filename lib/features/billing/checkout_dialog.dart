@@ -1,3 +1,4 @@
+import '../../services/auth_service.dart';
 import '../dashboard/dashboard_provider.dart';
 import '../products/product_provider.dart';
 import '../../models/cart_item_model.dart';
@@ -12,9 +13,7 @@ import 'package:printing/printing.dart';
 
 import '../../services/invoice_service.dart';
 
-class CheckoutDialog
-    extends ConsumerStatefulWidget {
-
+class CheckoutDialog extends ConsumerStatefulWidget {
   final double subtotal;
 
   final List<CartItemModel> items;
@@ -26,22 +25,159 @@ class CheckoutDialog
   });
 
   @override
-  ConsumerState<CheckoutDialog>
-      createState() =>
-          _CheckoutDialogState();
+  ConsumerState<CheckoutDialog> createState() =>
+      _CheckoutDialogState();
 }
 
 class _CheckoutDialogState
     extends ConsumerState<CheckoutDialog> {
-
   final discountController =
       TextEditingController();
 
   String paymentMethod = 'Cash';
 
+  bool _isProcessing = false;
+
+  @override
+  void dispose() {
+    discountController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _completeSale({
+    required double gst,
+    required double discount,
+    required double total,
+  }) async {
+    if (_isProcessing) {
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      // 1. Create the sale and update stock atomically.
+      final currentUser =
+    AuthService().currentUser;
+
+if (currentUser == null) {
+  throw Exception(
+    'User is not logged in.',
+  );
+}
+
+final sale = SaleModel(
+  id: const Uuid().v4(),
+
+  cashierId:
+      currentUser.id,
+
+  subtotal:
+      widget.subtotal,
+
+  gst:
+      gst,
+
+  discount:
+      discount,
+
+  total:
+      total,
+
+  paymentMethod:
+      paymentMethod,
+
+  createdAt:
+      DateTime.now(),
+);
+
+      await SalesService().completeSale(
+        sale: sale,
+        items: widget.items,
+      );
+
+      // 2. Generate invoice.
+      final pdfData =
+          await InvoiceService().generateInvoice(
+        items: widget.items,
+        subtotal: widget.subtotal,
+        gst: gst,
+        discount: discount,
+        total: total,
+        paymentMethod: paymentMethod,
+      );
+
+      // 3. Print invoice.
+      //
+      // The sale has already been successfully
+      // recorded at this point.
+      try {
+        await Printing.layoutPdf(
+          onLayout: (_) async => pdfData,
+        );
+      } catch (e) {
+        // Printing failure should NOT make us
+        // report the sale as failed.
+        debugPrint(
+          'Invoice printing failed: $e',
+        );
+      }
+
+      // 4. Refresh Sales screen.
+      ref.invalidate(salesProvider);
+
+      // 5. Refresh Dashboard.
+      ref.invalidate(dashboardProvider);
+
+      // 6. Refresh Products / Stock.
+      await ref
+          .read(productProvider.notifier)
+          .loadProducts();
+
+      // 7. Clear cart.
+      ref
+          .read(cartProvider.notifier)
+          .clearCart();
+
+      // 8. Close checkout.
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Sale Completed',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to complete sale: $e',
+          ),
+        ),
+      );
+
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-
     final discount =
         double.tryParse(
               discountController.text,
@@ -57,22 +193,18 @@ class _CheckoutDialogState
             discount;
 
     return AlertDialog(
-
       title: const Text(
         'Checkout',
       ),
 
       content: SizedBox(
-
         width: 420,
 
         child: Column(
-
           mainAxisSize:
               MainAxisSize.min,
 
           children: [
-
             billRow(
               'Subtotal',
               widget.subtotal,
@@ -83,31 +215,38 @@ class _CheckoutDialogState
               gst,
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(
+              height: 20,
+            ),
 
             TextField(
-
               controller:
                   discountController,
 
+              enabled:
+                  !_isProcessing,
+
               decoration:
                   const InputDecoration(
-                labelText: 'Discount',
+                labelText:
+                    'Discount',
               ),
 
               onChanged: (_) {
-                setState(() {});
+                if (!_isProcessing) {
+                  setState(() {});
+                }
               },
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(
+              height: 20,
+            ),
 
-            DropdownButtonFormField(
-
+            DropdownButtonFormField<String>(
               value: paymentMethod,
 
               items: const [
-
                 DropdownMenuItem(
                   value: 'Cash',
                   child: Text('Cash'),
@@ -124,27 +263,33 @@ class _CheckoutDialogState
                 ),
               ],
 
-              onChanged: (value) {
+              onChanged:
+                  _isProcessing
+                      ? null
+                      : (value) {
+                          if (value == null) {
+                            return;
+                          }
 
-                setState(() {
-
-                  paymentMethod =
-                      value!;
-                });
-              },
+                          setState(() {
+                            paymentMethod =
+                                value;
+                          });
+                        },
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(
+              height: 30,
+            ),
 
             Container(
-
               padding:
                   const EdgeInsets.all(
                 18,
               ),
 
-              decoration: BoxDecoration(
-
+              decoration:
+                  BoxDecoration(
                 color:
                     Colors.blue.shade50,
 
@@ -155,13 +300,11 @@ class _CheckoutDialogState
               ),
 
               child: Row(
-
                 mainAxisAlignment:
                     MainAxisAlignment
                         .spaceBetween,
 
                 children: [
-
                   const Text(
                     'Grand Total',
 
@@ -175,7 +318,8 @@ class _CheckoutDialogState
                   Text(
                     '₹ ${total.toStringAsFixed(2)}',
 
-                    style: const TextStyle(
+                    style:
+                        const TextStyle(
                       fontSize: 24,
                       color: Colors.blue,
                       fontWeight:
@@ -190,95 +334,45 @@ class _CheckoutDialogState
       ),
 
       actions: [
-
         TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed:
+              _isProcessing
+                  ? null
+                  : () {
+                      Navigator.pop(
+                        context,
+                      );
+                    },
+
           child: const Text(
             'Cancel',
           ),
         ),
 
         ElevatedButton(
+          onPressed:
+              _isProcessing
+                  ? null
+                  : () {
+                      _completeSale(
+                        gst: gst,
+                        discount: discount,
+                        total: total,
+                      );
+                    },
 
-          
-onPressed: () async {
-  try {
-    final sale = SaleModel(
-      id: const Uuid().v4(),
-      subtotal: widget.subtotal,
-      gst: gst,
-      discount: discount,
-      total: total,
-      paymentMethod: paymentMethod,
-      createdAt: DateTime.now(),
-    );
-
-    // 1. Complete sale + update stock atomically
-    await SalesService().completeSale(
-      sale: sale,
-      items: widget.items,
-    );
-
-    // 2. Generate invoice
-    final pdfData =
-        await InvoiceService().generateInvoice(
-      items: widget.items,
-      subtotal: widget.subtotal,
-      gst: gst,
-      discount: discount,
-      total: total,
-      paymentMethod: paymentMethod,
-    );
-
-    // 3. Print invoice
-    await Printing.layoutPdf(
-      onLayout: (_) async => pdfData,
-    );
-
-    // 4. Refresh Sales screen
-    ref.invalidate(salesProvider);
-
-    // 5. Refresh Dashboard
-    ref.invalidate(dashboardProvider);
-
-    // 6. Refresh Products / Stock
-    await ref
-        .read(productProvider.notifier)
-        .loadProducts();
-
-    // 7. Clear cart
-    ref
-        .read(cartProvider.notifier)
-        .clearCart();
-
-    // 8. Close checkout
-    if (context.mounted) {
-      Navigator.pop(context);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sale Completed'),
-        ),
-      );
-    }
-  } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Sale failed: $e',
-          ),
-        ),
-      );
-    }
-  }
-},
-
-          child: const Text(
-            'Complete Sale',
-          ),
+          child: _isProcessing
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child:
+                      CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                )
+              : const Text(
+                  'Complete Sale',
+                ),
         ),
       ],
     );
@@ -288,24 +382,21 @@ onPressed: () async {
     String title,
     double amount,
   ) {
-
     return Padding(
-
       padding:
           const EdgeInsets.only(
         bottom: 12,
       ),
 
       child: Row(
-
         mainAxisAlignment:
             MainAxisAlignment
                 .spaceBetween,
 
         children: [
-
           Text(
             title,
+
             style: const TextStyle(
               fontSize: 18,
             ),
@@ -314,7 +405,8 @@ onPressed: () async {
           Text(
             '₹ ${amount.toStringAsFixed(2)}',
 
-            style: const TextStyle(
+            style:
+                const TextStyle(
               fontSize: 18,
               fontWeight:
                   FontWeight.bold,

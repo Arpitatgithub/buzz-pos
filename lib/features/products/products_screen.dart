@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/product_model.dart';
+import '../../providers/user_profile_provider.dart';
 import 'product_provider.dart';
 
 class ProductsScreen extends ConsumerWidget {
@@ -15,6 +16,12 @@ class ProductsScreen extends ConsumerWidget {
 
     final productState =
         ref.watch(productProvider);
+
+    final profileAsync =
+        ref.watch(userProfileProvider);
+
+    final isAdmin =
+        profileAsync.value?.role == 'admin';
 
     final searchQuery =
     ref.watch(productSearchProvider);
@@ -315,10 +322,27 @@ if (filteredProducts.isEmpty) {
   Row(
     children: [
 
+      if (isAdmin)
+        IconButton(
+          tooltip: 'Adjust Stock',
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) =>
+                  AdjustStockDialog(
+                product: product,
+              ),
+            );
+          },
+          icon: const Icon(
+            Icons.inventory_2_outlined,
+            color: Colors.orange,
+          ),
+        ),
+
       IconButton(
-
+        tooltip: 'Edit Product',
         onPressed: () {
-
           showDialog(
             context: context,
             builder: (_) =>
@@ -327,7 +351,6 @@ if (filteredProducts.isEmpty) {
             ),
           );
         },
-
         icon: const Icon(
           Icons.edit,
           color: Colors.blue,
@@ -794,15 +817,6 @@ void initState() {
 
             TextField(
               controller:
-                  stockController,
-              decoration:
-                  const InputDecoration(
-                labelText: 'Stock',
-              ),
-            ),
-
-            TextField(
-              controller:
                   categoryController,
               decoration:
                   const InputDecoration(
@@ -917,11 +931,9 @@ GestureDetector(
               ) ??
               0,
 
-      stock:
-          int.tryParse(
-                stockController.text,
-              ) ??
-              0,
+      // Stock is managed separately through
+      // the audited stock-adjustment flow.
+      stock: widget.product.stock,
 
       category:
           categoryController.text,
@@ -950,3 +962,279 @@ GestureDetector(
     );
   }
 }
+
+class AdjustStockDialog extends ConsumerStatefulWidget {
+  final ProductModel product;
+
+  const AdjustStockDialog({
+    super.key,
+    required this.product,
+  });
+
+  @override
+  ConsumerState<AdjustStockDialog> createState() =>
+      _AdjustStockDialogState();
+}
+
+class _AdjustStockDialogState
+    extends ConsumerState<AdjustStockDialog> {
+  final quantityController =
+      TextEditingController();
+
+  String selectedReason = 'Damaged';
+
+  bool saving = false;
+
+  static const reasons = [
+    'Damaged',
+    'Expired',
+    'Lost',
+    'Manual correction',
+    'Supplier return',
+    'Other',
+  ];
+
+  @override
+  void dispose() {
+    quantityController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _adjustStock() async {
+    if (saving) {
+      return;
+    }
+
+    final quantityChange =
+        int.tryParse(
+          quantityController.text.trim(),
+        );
+
+    if (quantityChange == null ||
+        quantityChange == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Enter a valid stock adjustment. Use +10 to add or -5 to remove stock.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final newStock =
+        widget.product.stock + quantityChange;
+
+    if (newStock < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Stock cannot go below 0. Current stock: ${widget.product.stock}.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      saving = true;
+    });
+
+    try {
+      await ref
+          .read(productProvider.notifier)
+          .adjustStock(
+            productId: widget.product.id,
+            quantityChange: quantityChange,
+            reason: selectedReason,
+          );
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Stock updated: ${widget.product.stock} → $newStock',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        saving = false;
+      });
+
+      var message = e.toString();
+
+      if (message.startsWith('Exception: ')) {
+        message = message.substring(11);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quantityChange =
+        int.tryParse(
+              quantityController.text.trim(),
+            ) ??
+            0;
+
+    final newStock =
+        widget.product.stock + quantityChange;
+
+    return AlertDialog(
+      title: const Text('Adjust Stock'),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.product.name,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            Text(
+              'Current stock: ${widget.product.stock}',
+              style: TextStyle(
+                color: Colors.grey.shade700,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            TextField(
+              controller: quantityController,
+              enabled: !saving,
+              keyboardType:
+                  const TextInputType.numberWithOptions(
+                signed: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Quantity change',
+                hintText: 'Example: +10 or -5',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) {
+                setState(() {});
+              },
+            ),
+
+            const SizedBox(height: 18),
+
+            DropdownButtonFormField<String>(
+              value: selectedReason,
+              decoration: const InputDecoration(
+                labelText: 'Reason',
+                border: OutlineInputBorder(),
+              ),
+              items: reasons
+                  .map(
+                    (reason) =>
+                        DropdownMenuItem<String>(
+                      value: reason,
+                      child: Text(reason),
+                    ),
+                  )
+                  .toList(),
+              onChanged: saving
+                  ? null
+                  : (value) {
+                      if (value == null) {
+                        return;
+                      }
+
+                      setState(() {
+                        selectedReason = value;
+                      });
+                    },
+            ),
+
+            const SizedBox(height: 20),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius:
+                    BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'New stock',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    newStock < 0
+                        ? 'Invalid'
+                        : '$newStock',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: newStock < 0
+                          ? Colors.red
+                          : Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: saving
+              ? null
+              : () {
+                  Navigator.pop(context);
+                },
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: saving
+              ? null
+              : _adjustStock,
+          child: saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                )
+              : const Text('Adjust Stock'),
+        ),
+      ],
+    );
+  }
+}
+

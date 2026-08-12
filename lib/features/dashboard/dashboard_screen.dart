@@ -1,3 +1,4 @@
+import '../auth/user_management_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -39,14 +40,13 @@ void initState() {
   int selectedIndex = 0;
 
   final screens = [
-    const DashboardHome(),
-    const ProductsScreen(),
-    const CustomersScreen(),
-    const BillingScreen(),
-    const SalesScreen(),
-
-    
-  ];
+  const DashboardHome(),
+  const ProductsScreen(),
+  const CustomersScreen(),
+  const BillingScreen(),
+  const SalesScreen(),
+  const UserManagementScreen(),
+];
 
   @override
   Widget build(BuildContext context) {
